@@ -6062,7 +6062,8 @@
             return `<div class="evc"><span>${ico(EVS[e.id].ic)}</span><div><b>Hôm nay: ${EVS[e.id].n}</b><small>${evText(e)}</small></div></div>`
         }
         /* sự cố mất tiền: gian lận thì mất gần hết; người chơi thật 0–2 lần trong 90 ngày, mất dưới 1 triệu */
-        const BAD = [{
+        const BAD = [
+        /*    {
                 id: 'trom',
                 n: 'Trộm ghé quán!',
                 ic: 'sad',
@@ -6097,6 +6098,7 @@
                 all: 'Chủ quán dồn hết tiền vào một sàn tiền ảo lạ. Sàn sập, mất trắng.',
                 some: 'Chủ quán thử "đầu tư" tiền ảo trên một sàn lạ, lỗ %.'
             }
+        */
         ];
 
         function mkBadPlan(start) {
