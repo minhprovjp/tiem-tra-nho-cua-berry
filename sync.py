@@ -51,9 +51,20 @@ def main():
         
     # Find all local assets to download
     assets = set()
-    assets.update(re.findall(r'["\'](img/[^"\']+\.(?:png|jpg|webp))["\']', html))
-    assets.update(re.findall(r'["\'](snd/[^"\']+\.(?:mp3|wav))["\']', html))
-    assets.update(re.findall(r'["\'](s/baloo2/[^"\']+\.woff2)["\']', html))
+    print("Fetching sw.js for asset list...")
+    try:
+        sw_req = urllib.request.Request(BASE_URL + "sw.js", headers={'User-Agent': 'Mozilla/5.0'})
+        sw_js = urllib.request.urlopen(sw_req).read().decode('utf-8')
+        sw_assets = re.findall(r'[\'"]\.\/([^\'"]+)[\'"]', sw_js)
+        for a in sw_assets:
+            if a != "" and not a.endswith('/'):
+                assets.add(a)
+    except Exception as e:
+        print(f"Failed to fetch sw.js: {e}")
+        assets.update(re.findall(r'["\'](img/[^"\']+\.(?:png|jpg|webp))["\']', html))
+        assets.update(re.findall(r'["\'](snd/[^"\']+\.(?:mp3|wav))["\']', html))
+        assets.update(re.findall(r'["\'](s/baloo2/[^"\']+\.woff2)["\']', html))
+        
     assets.add("sw.js")
     assets.add("manifest.webmanifest")
     assets.add("icon-192.png")
