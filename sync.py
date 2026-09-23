@@ -38,7 +38,7 @@ def main():
     print("Commenting out BAD array...")
     # Regex to find const BAD = [ ... ]; and comment it out
     pattern = re.compile(r'(const\s+BAD\s*=\s*\[.*?\];)', re.DOTALL)
-    replacement = r'/* \1 */'
+    replacement = r'/* \1 */\nconst BAD = [];'
     
     if pattern.search(html):
         html = pattern.sub(replacement, html)
