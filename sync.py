@@ -34,17 +34,17 @@ def main():
         print(f"Failed to fetch index.html: {e}")
         return
     
-    # Patch mkBadPlan to disable bad events
-    print("Patching mkBadPlan...")
-    # Regex to find mkBadPlan and replace it entirely
-    pattern = re.compile(r'function mkBadPlan\(start\)\s*\{.*?return\s*\{.*?\}\s*\}', re.DOTALL)
-    replacement = 'function mkBadPlan(start) { return { start, ev: [] }; }'
+    # Comment out BAD array to disable bad events
+    print("Commenting out BAD array...")
+    # Regex to find const BAD = [ ... ]; and comment it out
+    pattern = re.compile(r'(const\s+BAD\s*=\s*\[.*?\];)', re.DOTALL)
+    replacement = r'/* \1 */'
     
     if pattern.search(html):
         html = pattern.sub(replacement, html)
-        print("Successfully patched mkBadPlan.")
+        print("Successfully commented out BAD array.")
     else:
-        print("WARNING: Could not find mkBadPlan to patch.")
+        print("WARNING: Could not find BAD array to comment out.")
         
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html)
