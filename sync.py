@@ -1,78 +1,92 @@
-import urllib.request
-import re
 import os
+import re
+import urllib.request
 
 BASE_URL = "https://trongnhi.trongnhi110266.workers.dev/"
 
+
+def fetch_text(url):
+    request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return response.read().decode("utf-8")
+
+
 def download_asset(path):
-    if path.startswith("http"):
+    if path.startswith(("http://", "https://", "data:")):
         return
+
+    local_path = path.split("?", 1)[0]
+    directory = os.path.dirname(local_path)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+
+    if os.path.exists(local_path):
+        return
+
     url = BASE_URL + path
-    local_path = path.split("?")[0]
-    
-    # Don't download if we're not in a directory where we can write safely,
-    # but the action runs in the repo root.
-    if os.path.dirname(local_path):
-        os.makedirs(os.path.dirname(local_path), exist_ok=True)
-        
-    if not os.path.exists(local_path):
-        print(f"Downloading new asset: {local_path}")
-        try:
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            data = urllib.request.urlopen(req).read()
-            with open(local_path, 'wb') as f:
-                f.write(data)
-        except Exception as e:
-            print(f"Failed to download {url}: {e}")
+    print(f"Downloading new asset: {local_path}")
+    try:
+        request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(request, timeout=30) as response:
+            with open(local_path, "wb") as output:
+                output.write(response.read())
+    except Exception as error:
+        print(f"Failed to download {url}: {error}")
+
+
+def remove_unofficial_site_gate(html):
+    patterns = (
+        r"<script\b[^>]*>\s*/\*\s*kiểm tra nơi chạy game.*?</script>",
+        r"<script\b[^>]*>(?=[\s\S]*?window\.tsHostOk)(?=[\s\S]*?document\.open\(\))[\\s\\S]*?</script>",
+    )
+
+    cleaned = html
+    removed = False
+    for pattern in patterns:
+        cleaned, count = re.subn(pattern, "", cleaned, count=1, flags=re.IGNORECASE)
+        removed = removed or count > 0
+
+    if removed:
+        print("Removed the unofficial-host warning page.")
+    else:
+        print("No unofficial-host warning page found.")
+    return cleaned
+
 
 def main():
     print("Fetching index.html...")
     try:
-        req = urllib.request.Request(BASE_URL, headers={'User-Agent': 'Mozilla/5.0'})
-        html = urllib.request.urlopen(req).read().decode('utf-8')
-    except Exception as e:
-        print(f"Failed to fetch index.html: {e}")
-        return
-    
-    # Comment out BAD array to disable bad events
-    print("Commenting out BAD array...")
-    # Regex to find const BAD = [ ... ]; and comment it out
-    pattern = re.compile(r'(const\s+BAD\s*=\s*\[.*?\];)', re.DOTALL)
-    replacement = r'/* \1 */\nconst BAD = [];'
-    
-    if pattern.search(html):
-        html = pattern.sub(replacement, html)
-        print("Successfully commented out BAD array.")
-    else:
-        print("WARNING: Could not find BAD array to comment out.")
-        
-    with open("index.html", "w", encoding="utf-8") as f:
-        f.write(html)
-        
-    # Find all local assets to download
+        html = fetch_text(BASE_URL)
+    except Exception as error:
+        print(f"Failed to fetch index.html: {error}")
+        raise SystemExit(1)
+
+    html = remove_unofficial_site_gate(html)
+    with open("index.html", "w", encoding="utf-8", newline="") as output:
+        output.write(html)
+
     assets = set()
     print("Fetching sw.js for asset list...")
     try:
-        sw_req = urllib.request.Request(BASE_URL + "sw.js", headers={'User-Agent': 'Mozilla/5.0'})
-        sw_js = urllib.request.urlopen(sw_req).read().decode('utf-8')
-        sw_assets = re.findall(r'[\'"]\.\/([^\'"]+)[\'"]', sw_js)
-        for a in sw_assets:
-            if a != "" and not a.endswith('/'):
-                assets.add(a)
-    except Exception as e:
-        print(f"Failed to fetch sw.js: {e}")
-        assets.update(re.findall(r'["\'](img/[^"\']+\.(?:png|jpg|webp))["\']', html))
-        assets.update(re.findall(r'["\'](snd/[^"\']+\.(?:mp3|wav))["\']', html))
-        assets.update(re.findall(r'["\'](s/baloo2/[^"\']+\.woff2)["\']', html))
-        
-    assets.add("sw.js")
-    assets.add("manifest.webmanifest")
-    assets.add("icon-192.png")
-    
-    for asset in assets:
+        sw_js = fetch_text(BASE_URL + "sw.js")
+        assets.update(
+            asset
+            for asset in re.findall(r"['\"]\.\/([^'\"]+)['\"]", sw_js)
+            if asset and not asset.endswith("/")
+        )
+    except Exception as error:
+        print(f"Failed to fetch sw.js: {error}")
+        assets.update(re.findall(r"['\"](img/[^'\"]+\.(?:png|jpg|webp))['\"]", html))
+        assets.update(re.findall(r"['\"](snd/[^'\"]+\.(?:mp3|wav))['\"]", html))
+        assets.update(re.findall(r"['\"](s/baloo2/[^'\"]+\.woff2)['\"]", html))
+
+    assets.update({"sw.js", "manifest.webmanifest", "icon-192.png"})
+
+    for asset in sorted(assets):
         download_asset(asset)
-        
+
     print("Sync complete.")
+
 
 if __name__ == "__main__":
     main()
