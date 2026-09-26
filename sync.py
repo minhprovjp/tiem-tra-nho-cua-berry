@@ -35,16 +35,17 @@ def download_asset(path):
 
 
 def remove_unofficial_site_gate(html):
-    patterns = (
-        r"<script\b[^>]*>\s*/\*\s*kiểm tra nơi chạy game.*?</script>",
-        r"<script\b[^>]*>(?=[\s\S]*?window\.tsHostOk)(?=[\s\S]*?document\.open\(\))[\\s\\S]*?</script>",
-    )
-
-    cleaned = html
     removed = False
-    for pattern in patterns:
-        cleaned, count = re.subn(pattern, "", cleaned, count=1, flags=re.IGNORECASE)
-        removed = removed or count > 0
+
+    def strip_gate(match):
+        nonlocal removed
+        script = match.group(0)
+        if re.search(r"window\.tsHostOk", script) and re.search(r"document\.open\s*\(", script):
+            removed = True
+            return ""
+        return script
+
+    cleaned = re.sub(r"<script\b[^>]*>[\s\S]*?</script\s*>", strip_gate, html, flags=re.IGNORECASE)
 
     if removed:
         print("Removed the unofficial-host warning page.")
