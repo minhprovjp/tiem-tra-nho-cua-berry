@@ -13,25 +13,30 @@ def fetch_text(url):
 
 def download_asset(path):
     if path.startswith(("http://", "https://", "data:")):
-        return
+        return True
 
     local_path = path.split("?", 1)[0]
     directory = os.path.dirname(local_path)
     if directory:
         os.makedirs(directory, exist_ok=True)
 
-    if os.path.exists(local_path):
-        return
+    if local_path != "sw.js" and os.path.isfile(local_path) and os.path.getsize(local_path) > 0:
+        return True
 
     url = BASE_URL + path
     print(f"Downloading new asset: {local_path}")
     try:
         request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(request, timeout=30) as response:
-            with open(local_path, "wb") as output:
-                output.write(response.read())
+            content = response.read()
+        if not content.strip():
+            raise ValueError("Downloaded asset is empty")
+        with open(local_path, "wb") as output:
+            output.write(content)
+        return True
     except Exception as error:
         print(f"Failed to download {url}: {error}")
+        return os.path.isfile(local_path) and os.path.getsize(local_path) > 0
 
 
 def remove_unofficial_site_gate(html):
@@ -84,7 +89,9 @@ def main():
     assets.update({"sw.js", "manifest.webmanifest", "icon-192.png"})
 
     for asset in sorted(assets):
-        download_asset(asset)
+        downloaded = download_asset(asset)
+        if asset == "sw.js" and not downloaded:
+            raise SystemExit("Could not obtain a non-empty sw.js; aborting sync.")
 
     print("Sync complete.")
 
