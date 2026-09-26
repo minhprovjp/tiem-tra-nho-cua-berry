@@ -119,6 +119,25 @@ def deobfuscate_and_clean(html):
     print("Successfully deobfuscated and cleaned game loader.")
     return html
 
+def remove_unofficial_site_gate(html):
+    removed = False
+
+    def strip_gate(match):
+        nonlocal removed
+        script = match.group(0)
+        if re.search(r"window\.tsHostOk", script) and re.search(r"document\.open\s*\(", script):
+            removed = True
+            return ""
+        return script
+
+    cleaned = re.sub(r"<script\b[^>]*>[\s\S]*?</script\s*>", strip_gate, html, flags=re.IGNORECASE)
+
+    if removed:
+        print("Removed the unofficial-host warning page.")
+    else:
+        print("No unofficial-host warning page found.")
+    return cleaned
+
 def main():
     print("Fetching index.html...")
     try:
@@ -141,6 +160,8 @@ def main():
         print("Successfully commented out BAD array.")
     else:
         print("WARNING: Could not find BAD array to comment out.")
+        
+    html = remove_unofficial_site_gate(html)
     
     with open("index.html", "w", encoding="utf-8", newline="") as output:
         output.write(html)
