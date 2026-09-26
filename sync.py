@@ -36,14 +36,8 @@ def download_asset(path):
 def remove_unofficial_site_gate(html):
     removed = False
     
-    # 1. Remove the specific obfuscated script block (var W=[...])
-    obfuscated_pattern = r'<script\b[^>]*>\s*\(function\(\)\{var W=\[[\s\S]*?\}\)\(\);\s*<\/script>'
-    if re.search(obfuscated_pattern, html, re.IGNORECASE):
-        html = re.sub(obfuscated_pattern, '', html)
-        removed = True
-        print("Removed the obfuscated anti-bot/unofficial-host script.")
-
-    # 2. Remove the other known gate script (window.tsHostOk)
+    # Targets ONLY the actual hijack script (window.tsHostOk + document.open).
+    # Leaves the obfuscated game loader (var W=[...]) intact so the game can boot.
     def strip_gate(match):
         nonlocal removed
         script = match.group(0)
@@ -55,7 +49,7 @@ def remove_unofficial_site_gate(html):
     cleaned = re.sub(r"<script\b[^>]*>[\s\S]*?</script\s*>", strip_gate, html, flags=re.IGNORECASE)
     
     if removed:
-        print("Successfully removed unofficial-host gate(s).")
+        print("Removed the unofficial-host warning page.")
     else:
         print("No unofficial-host warning page found.")
     return cleaned
