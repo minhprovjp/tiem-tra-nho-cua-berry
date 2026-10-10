@@ -17,13 +17,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
+      # - name: Set up Python
+      #   uses: actions/setup-python@v5
+      #   with:
+      #     python-version: "3.x"
 
-      - name: Run sync script and remove the unofficial-host warning
-        run: python sync.py
+      # - name: Run sync script and remove the unofficial-host warning
+      #   run: python sync.py
 
       - name: Commit and push changes
         run: |
