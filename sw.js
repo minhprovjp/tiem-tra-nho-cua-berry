@@ -1,4 +1,4 @@
-// Lưu game vào máy để mở được cả khi không có mạng. Đổi VERSION mỗi lần cập nhật game.
+// Lưu game vào máy để mở được cả khi không có mạng. Đổi VERSION mỗi lần cập nhật game .
 const VERSION = "trasua-3.11.1";
 const FILES = [
   "./",
