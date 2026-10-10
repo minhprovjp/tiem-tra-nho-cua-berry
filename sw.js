@@ -185,3 +185,4 @@ self.addEventListener("fetch", (e) => {
     ),
   );
 });
+self.addEventListener('fetch', () => {}); // không giữ gì, luôn lấy từ mạng
